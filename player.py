@@ -7,8 +7,7 @@ class Player(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
-        # Timer to limit auto-fire rate so we don't crash the simulation
-        self.shoot_timer = 0
+        self.timer = 0 # Cooldown timer
 
     def triangle(self):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -25,7 +24,7 @@ class Player(CircleShape):
         self.rotation += PLAYER_TURN_SPEED * dt
 
     def update(self, dt):
-        self.shoot_timer += dt
+        self.timer -= dt
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_a]:
@@ -38,14 +37,14 @@ class Player(CircleShape):
             self.move(-dt)
         if keys[pygame.K_SPACE]:
             self.shoot()
+            
+        # --- HACK FOR HEADLESS TESTING ---
+        # Try to shoot every single frame. 
+        # The new cooldown logic in shoot() will ensure this only 
+        # actually fires once every 0.3 seconds.
+        self.shoot()
         
-        # --- HACK: Auto-fire for headless testing ---
-        # Fires a shot every 0.2 seconds automatically
-        if self.shoot_timer > 0.2:
-            self.shoot()
-            self.shoot_timer = 0
-        
-        # Force movement hack (keep this if you want the ship to keep moving)
+        # Keep moving to generate position data
         self.move(dt)
 
     def move(self, dt):
@@ -55,5 +54,9 @@ class Player(CircleShape):
         self.position += rotated_with_speed_vector
 
     def shoot(self):
+        if self.timer > 0:
+            return
+        
+        self.timer = PLAYER_SHOOT_COOLDOWN
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED

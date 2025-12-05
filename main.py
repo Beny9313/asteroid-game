@@ -30,6 +30,12 @@ def main():
     asteroid_field = AsteroidField()
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
+    # --- HACK: Safe Target Practice ---
+    # Spawn a large asteroid 250 pixels away (downwards). 
+    # This is far enough so the player doesn't crash immediately, 
+    # but close enough for the auto-fire bullets to hit and split it.
+    Asteroid(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 250, ASTEROID_MAX_RADIUS)
+
     while True:
         log_state() 
 
@@ -45,10 +51,19 @@ def main():
         updatable.update(dt)
 
         for asteroid in asteroids:
+            # Check for player death
             if asteroid.collides_with(player):
                 print("Game over!")
                 log_event("player_hit")
                 sys.exit()
+            
+            # Check for bullet hits (Nested Loop)
+            for shot in shots:
+                if asteroid.collides_with(shot):
+                    shot.kill()
+                    # We now split instead of just killing
+                    asteroid.split()
+                    log_event("asteroid_shot")
         
         pygame.display.flip()
         
